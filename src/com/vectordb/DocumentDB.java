@@ -99,4 +99,44 @@ public class DocumentDB {
     public int getDims() {
         return dims;
     }
+
+    public void saveToDisk() {
+        lock.lock();
+        try {
+            java.util.List<String> lines = new ArrayList<>();
+            for (DocItem d : store.values()) {
+                String line = "{\"title\":" + JsonUtil.jS(d.title) + 
+                              ",\"text\":" + JsonUtil.jS(d.text) + 
+                              ",\"embedding\":" + JsonUtil.jVec(d.emb) + "}";
+                lines.add(line);
+            }
+            java.nio.file.Files.write(java.nio.file.Path.of("documents.jsonl"), lines, java.nio.charset.StandardCharsets.UTF_8);
+        } catch (Exception e) {
+            System.err.println("Failed to save documents: " + e.getMessage());
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    public void loadFromDisk() {
+        lock.lock();
+        try {
+            java.nio.file.Path p = java.nio.file.Path.of("documents.jsonl");
+            if (!java.nio.file.Files.exists(p)) return;
+            java.util.List<String> lines = java.nio.file.Files.readAllLines(p, java.nio.charset.StandardCharsets.UTF_8);
+            for (String line : lines) {
+                if (line.trim().isEmpty()) continue;
+                String title = JsonUtil.extractStr(line, "title");
+                String text = JsonUtil.extractStr(line, "text");
+                float[] emb = JsonUtil.extractFloatArray(line, "embedding");
+                if (!title.isEmpty() && !text.isEmpty() && emb.length > 0) {
+                    this.insert(title, text, emb);
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Failed to load documents: " + e.getMessage());
+        } finally {
+            lock.unlock();
+        }
+    }
 }

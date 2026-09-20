@@ -39,7 +39,12 @@ public class Main {
         docDB = new DocumentDB();
         ollama = new OllamaClient();
 
-        DemoData.load(db);
+        db.loadFromDisk();
+        if (db.size() == 0) {
+            DemoData.load(db);
+            db.saveToDisk();
+        }
+        docDB.loadFromDisk();
 
         boolean ollamaUp = ollama.isAvailable();
         System.out.println("=== VectorDB Engine ===");
@@ -147,12 +152,14 @@ public class Main {
         }
         DistFn dist = Distances.getDistFn("cosine");
         int id = db.insert(parsed.meta, parsed.cat, parsed.emb, dist);
+        db.saveToDisk();
         sendJson(ex, 200, "{\"id\":" + id + "}");
     }
 
     private static void handleDelete(HttpExchange ex, int id) throws IOException {
         cors(ex);
         boolean ok = db.remove(id);
+        if (ok) db.saveToDisk();
         sendJson(ex, 200, "{\"ok\":" + ok + "}");
     }
 
@@ -268,12 +275,14 @@ public class Main {
 
         String json = "{\"ids\":[" + ids + "],\"chunks\":" + chunks.size()
                 + ",\"dims\":" + docDB.getDims() + "}";
+        docDB.saveToDisk();
         sendJson(ex, 200, json);
     }
 
     private static void handleDocDelete(HttpExchange ex, int id) throws IOException {
         cors(ex);
         boolean ok = docDB.remove(id);
+        if (ok) docDB.saveToDisk();
         sendJson(ex, 200, "{\"ok\":" + ok + "}");
     }
 

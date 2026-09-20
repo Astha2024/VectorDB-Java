@@ -157,4 +157,45 @@ public class VectorDB {
             lock.unlock();
         }
     }
+
+    public void saveToDisk() {
+        lock.lock();
+        try {
+            java.util.List<String> lines = new ArrayList<>();
+            for (VectorItem d : store.values()) {
+                String line = "{\"metadata\":" + JsonUtil.jS(d.metadata) + 
+                              ",\"category\":" + JsonUtil.jS(d.category) + 
+                              ",\"embedding\":" + JsonUtil.jVec(d.emb) + "}";
+                lines.add(line);
+            }
+            java.nio.file.Files.write(java.nio.file.Path.of("vectors.jsonl"), lines, java.nio.charset.StandardCharsets.UTF_8);
+        } catch (Exception e) {
+            System.err.println("Failed to save vectors: " + e.getMessage());
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    public void loadFromDisk() {
+        lock.lock();
+        try {
+            java.nio.file.Path p = java.nio.file.Path.of("vectors.jsonl");
+            if (!java.nio.file.Files.exists(p)) return;
+            java.util.List<String> lines = java.nio.file.Files.readAllLines(p, java.nio.charset.StandardCharsets.UTF_8);
+            DistFn dist = Distances.getDistFn("cosine");
+            for (String line : lines) {
+                if (line.trim().isEmpty()) continue;
+                String meta = JsonUtil.extractStr(line, "metadata");
+                String cat = JsonUtil.extractStr(line, "category");
+                float[] emb = JsonUtil.extractFloatArray(line, "embedding");
+                if (!meta.isEmpty() && emb.length > 0) {
+                    this.insert(meta, cat, emb, dist);
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Failed to load vectors: " + e.getMessage());
+        } finally {
+            lock.unlock();
+        }
+    }
 }
