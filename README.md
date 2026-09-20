@@ -100,15 +100,4 @@ VectorDB-Java/
 
 All REST endpoints, request/response JSON shapes, and the demo dataset are unchanged — the frontend (`index.html`) works with either backend without modification.
 
-## Common Issues
 
-| Problem | Fix |
-|---|---|
-| `javac: command not found` | Install a JDK (17+) and make sure its `bin` folder is on PATH |
-| `Ollama: OFFLINE` in header | Run `ollama serve` in a terminal |
-| Port 8080 already in use | `netstat -ano \| findstr 8080` then `taskkill /PID <pid> /F` |
-| LLM answer is slow | Same as before — try `ollama pull llama3.2:1b` and change `genModel` in `Main.java` |
-
-## License
-
-MIT — use this however you want.
